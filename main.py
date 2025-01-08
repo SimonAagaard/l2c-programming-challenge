@@ -1,20 +1,29 @@
 import azure.identity as AzureIdentity
 import azure.cosmos.exceptions as exceptions
-from azure.cosmos import CosmosClient
 import config
 from movie import Movie
+from azure.cosmos import CosmosClient
 from azure.cosmos.partition_key import PartitionKey
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 
 HOST = config.settings['host'].value
 MASTER_KEY = config.settings['master_key'].value
 DATABASE_ID = config.settings['database_id']
 CONTAINER_ID = config.settings['container_id']
+STORAGE_ACCOUNT_URL = config.settings['storage_account_url']
+
+default_credential = AzureIdentity.DefaultAzureCredential()
+cosmos_client = CosmosClient(HOST, {'masterKey': MASTER_KEY}, user_agent="CosmosDBPythonQuickstart", user_agent_overwrite=True)
+blob_service_client = BlobServiceClient(STORAGE_ACCOUNT_URL, credential=default_credential)
 
 #Get movies to seed DB
 def get_seed_movies():
+
+   the_godfather_cover_url = blob_service_client.get_blob_client(container="images", blob="godfather-cover.jpg").url
+   the_shawshank_redemption_cover_url = blob_service_client.get_blob_client(container="images", blob="5051892225281.webp").url
    movies = [ 
-        Movie("The Godfather", "1972", 9.2, "Crime, Drama"),
-        Movie("The Shawshank Redemption", "1994", 9.2, "Drama")
+        Movie("The Godfather", "1972", 9.2, "Crime, Drama", the_godfather_cover_url),
+        Movie("The Shawshank Redemption", "1994", 9.2, "Drama", the_shawshank_redemption_cover_url)
     ]
 
    return movies
@@ -22,13 +31,12 @@ def get_seed_movies():
 #function to setup new db and container
 def init():
     #connect to azure cosmos db
-    client = CosmosClient(HOST, {'masterKey': MASTER_KEY}, user_agent="CosmosDBPythonQuickstart", user_agent_overwrite=True)
     try:
-        db = client.create_database(id=DATABASE_ID)
+        db = cosmos_client.create_database(id=DATABASE_ID)
         print("Created database: {0}".format(db.id))
 
     except exceptions.CosmosResourceExistsError:
-        db = client.get_database_client(DATABASE_ID)
+        db = cosmos_client.get_database_client(DATABASE_ID)
         print("Database {0} already exists".format(DATABASE_ID))
 
     #Remove this after running once
