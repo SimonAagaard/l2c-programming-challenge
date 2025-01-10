@@ -5,3 +5,9 @@ class Movie():
         self.rating = rating
         self.genre = genre
         self.cover_url = cover_url
+
+    def __init__(self, title, release_year, rating, genre):
+        self.title = title
+        self.release_year = release_year
+        self.rating = rating
+        self.genre = genre
